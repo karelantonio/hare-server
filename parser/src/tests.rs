@@ -1,3 +1,4 @@
+use crate::ast::*;
 use crate::lex::Tk;
 use logos::Logos;
 
@@ -40,6 +41,7 @@ fn test_lex_dec_numbers() {
     );
 }
 
+/// Test lexing a basic program
 #[test]
 fn test_lex_basic_main() {
     let data = r#"fn main() void = {
@@ -76,4 +78,70 @@ fn test_lex_basic_main() {
         .expect("Should not be any error while lexing");
 
     assert_eq!(&tk, &exp);
+}
+
+/// Test parse a basic type
+#[test]
+fn test_parse_tys() {
+    let expr = r#"i32"#;
+    let mut parser = Parser::new(expr).expect("Should not be any lex error");
+    let res = parser.reduce_ty();
+    println!("Expression: {expr:?} and result: {res:?}");
+    assert_eq!(
+        Ok(Ty {
+            error: false,
+            constant: false,
+            storage: StorageClass::Primitive(PrimitiveTy::IntegerTy(IntegerTy::I32)),
+        }),
+        res
+    );
+    let expr = r#"f64"#;
+    let mut parser = Parser::new(expr).expect("Should not be any lex error");
+    let res = parser.reduce_ty();
+    println!("Expression: {expr:?} and result: {res:?}");
+    assert_eq!(
+        Ok(Ty {
+            error: false,
+            constant: false,
+            storage: StorageClass::Primitive(PrimitiveTy::FloatTy(FloatTy::F64)),
+        }),
+        res
+    );
+}
+
+/// Test parse a little more complex type
+#[test]
+fn test_parse_tys_little_more_complex() {
+    let expr = r#"const uintptr"#;
+    let mut parser = Parser::new(expr).expect("Should not be any lex error");
+    let res = parser.reduce_ty();
+    println!("Expression: {expr:?} and result: {res:?}");
+    assert_eq!(
+        Ok(Ty {
+            error: false,
+            constant: true,
+            storage: StorageClass::Primitive(PrimitiveTy::IntegerTy(IntegerTy::UIntPtr)),
+        }),
+        res
+    );
+    let expr = r#"const !uintptr"#;
+    let mut parser = Parser::new(expr).expect("Should not be any lex error");
+    let res = parser.reduce_ty();
+    println!("Expression: {expr:?} and result: {res:?}");
+    assert_eq!(
+        Ok(Ty {
+            error: true,
+            constant: true,
+            storage: StorageClass::Primitive(PrimitiveTy::IntegerTy(IntegerTy::UIntPtr)),
+        }),
+        res
+    );
+}
+
+/// Test parse a simple expresion
+#[test]
+fn test_parse_basic_expr() {
+    let expr = r#"1+1"#;
+    let parser = Parser::new(expr);
+    println!("{parser:?}");
 }
