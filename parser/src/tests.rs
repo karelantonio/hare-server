@@ -91,7 +91,7 @@ fn test_parse_tys() {
         Ok(Ty {
             error: false,
             constant: false,
-            storage: StorageClass::Primitive(PrimitiveTy::IntegerTy(IntegerTy::I32)),
+            storage: StorageClass::Primitive(PrimitiveTy::Integer(IntegerTy::I32)).into(),
         }),
         res
     );
@@ -103,7 +103,7 @@ fn test_parse_tys() {
         Ok(Ty {
             error: false,
             constant: false,
-            storage: StorageClass::Primitive(PrimitiveTy::FloatTy(FloatTy::F64)),
+            storage: StorageClass::Primitive(PrimitiveTy::Float(FloatTy::F64)).into(),
         }),
         res
     );
@@ -120,7 +120,7 @@ fn test_parse_tys_little_more_complex() {
         Ok(Ty {
             error: false,
             constant: true,
-            storage: StorageClass::Primitive(PrimitiveTy::IntegerTy(IntegerTy::UIntPtr)),
+            storage: StorageClass::Primitive(PrimitiveTy::Integer(IntegerTy::UIntPtr)).into(),
         }),
         res
     );
@@ -132,10 +132,51 @@ fn test_parse_tys_little_more_complex() {
         Ok(Ty {
             error: true,
             constant: true,
-            storage: StorageClass::Primitive(PrimitiveTy::IntegerTy(IntegerTy::UIntPtr)),
+            storage: StorageClass::Primitive(PrimitiveTy::Integer(IntegerTy::UIntPtr)).into(),
         }),
         res
     );
+    let expr = r#"const *const !int"#;
+    let mut parser = Parser::new(expr).expect("Should not be any lex error");
+    let res = parser.reduce_ty();
+    println!("Expression: {expr:?} and result: {res:?}");
+    assert_eq!(
+        Ok(Ty {
+            error: false,
+            constant: true,
+            storage: StorageClass::Pointer {
+                nullable: false,
+                ty: Ty {
+                    error: true,
+                    constant: true,
+                    storage: StorageClass::Primitive(PrimitiveTy::Integer(IntegerTy::Int)).into()
+                }
+            }
+            .into(),
+        }),
+        res
+    );
+}
+
+/// Test a complex type declaration
+#[test]
+fn test_parse_ty_complex() {
+    let expr = r#"
+    *struct{
+        name: union{
+            a: i32
+        },
+        age: f64,
+        nameagain: str,
+        lastname: struct{
+            z: *u32,
+        }
+    }  "#;
+
+    let mut parser = Parser::new(expr).unwrap();
+    println!("{parser:?}");
+    let ty = parser.reduce_ty().expect("Should not error parsing");
+    println!("{ty:?}");
 }
 
 /// Test parse a simple expresion
